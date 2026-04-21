@@ -5,6 +5,7 @@ import { Tool } from '@/types'
 import { ToolCard } from '@/components/ToolCard'
 import { PendingBadge } from '@/components/PendingBadge'
 import { AddToolModal } from '@/components/AddToolModal'
+import { ClaudeChat } from '@/components/ClaudeChat'
 
 export default function Dashboard() {
   const { data: session } = useSession()
@@ -85,6 +86,8 @@ export default function Dashboard() {
       </button>
 
       {showModal && <AddToolModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
+
+      <ClaudeChat context={{ tools: tools.map(t => ({ name: t.name, is_on: t.is_on })) }} />
     </div>
   )
 }
