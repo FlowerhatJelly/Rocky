@@ -37,13 +37,13 @@ export function ToolCard({ tool, onToggle, onEnvChange }: Props) {
 
         <button
           onClick={() => onToggle(tool.id, !tool.is_on)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
+          className={`relative flex items-center w-12 h-6 rounded-full px-1 transition-colors ${
             tool.is_on ? 'bg-green-500' : 'bg-gray-600'
           }`}
         >
           <span
-            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full transition-transform ${
-              tool.is_on ? 'translate-x-7' : 'translate-x-1'
+            className={`w-4 h-4 bg-white rounded-full transition-transform ${
+              tool.is_on ? 'translate-x-6' : 'translate-x-0'
             }`}
           />
         </button>
