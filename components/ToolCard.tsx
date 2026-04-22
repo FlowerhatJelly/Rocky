@@ -42,7 +42,7 @@ export function ToolCard({ tool, onToggle, onEnvChange }: Props) {
           }`}
         >
           <span
-            className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+            className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full transition-transform ${
               tool.is_on ? 'translate-x-7' : 'translate-x-1'
             }`}
           />
