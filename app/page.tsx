@@ -1,93 +1,82 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { Tool } from '@/types'
-import { ToolCard } from '@/components/ToolCard'
-import { PendingBadge } from '@/components/PendingBadge'
-import { AddToolModal } from '@/components/AddToolModal'
-import { ClaudeChat } from '@/components/ClaudeChat'
+import { ToolsTab } from '@/components/ToolsTab'
+import { ChangesTab } from '@/components/ChangesTab'
+import { GraceTab } from '@/components/GraceTab'
+import { ChatTab } from '@/components/ChatTab'
+
+type Tab = 'tools' | 'changes' | 'grace' | 'chat'
+
+const tabs: { id: Tab; label: string }[] = [
+  { id: 'tools', label: '툴' },
+  { id: 'changes', label: '변경사항' },
+  { id: 'grace', label: 'Grace' },
+  { id: 'chat', label: '채팅' },
+]
 
 export default function Dashboard() {
   const { data: session } = useSession()
-  const [tools, setTools] = useState<Tool[]>([])
+  const [activeTab, setActiveTab] = useState<Tab>('tools')
   const [pendingCount, setPendingCount] = useState(0)
-  const [showModal, setShowModal] = useState(false)
+  const [tools, setTools] = useState<{ name: string; is_on: boolean }[]>([])
 
   useEffect(() => {
-    fetch('/api/tools').then(r => r.json()).then(setTools)
     fetch('/api/changes?status=pending').then(r => r.json()).then(d => setPendingCount(d.length ?? 0))
-
-    const interval = setInterval(async () => {
-      await fetch('/api/tools/health-check', { method: 'POST' })
-      const updated = await fetch('/api/tools').then(r => r.json())
-      setTools(updated)
-    }, 5 * 60 * 1000)
-
-    return () => clearInterval(interval)
+    fetch('/api/tools').then(r => r.json()).then(setTools)
   }, [])
 
-  async function handleToggle(id: string, is_on: boolean) {
-    await fetch(`/api/tools/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_on }),
-    })
-    setTools(prev => prev.map(t => t.id === id ? { ...t, is_on } : t))
-  }
-
-  async function handleEnvChange(id: string, active_env: 'dev' | 'release') {
-    await fetch(`/api/tools/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ active_env }),
-    })
-    setTools(prev => prev.map(t => t.id === id ? { ...t, active_env } : t))
-  }
-
-  async function handleAdd(tool: { name: string; type: string; dev_url: string; release_url: string }) {
-    const res = await fetch('/api/tools', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tool),
-    })
-    const newTool = await res.json()
-    setTools(prev => [...prev, newTool])
-  }
-
   return (
-    <div className="min-h-screen bg-gray-950 p-4 max-w-lg mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-white text-2xl font-bold">Rocky</h1>
-        <button onClick={() => signOut()} className="text-gray-500 text-sm hover:text-gray-300">
-          {session?.user?.name ?? '로그아웃'}
-        </button>
-      </div>
+    <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
+      {/* 사이드바 */}
+      <aside className="w-52 flex-shrink-0 flex flex-col border-r border-gray-800 bg-gray-950">
+        <div className="px-5 py-5 border-b border-gray-800">
+          <h1 className="text-xl font-bold tracking-tight">Rocky</h1>
+          <p className="text-gray-600 text-xs mt-0.5">{session?.user?.name}</p>
+        </div>
 
-      <div className="mb-4">
-        <PendingBadge count={pendingCount} />
-      </div>
+        <nav className="flex-1 p-3 space-y-1">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition
+                ${activeTab === tab.id
+                  ? 'bg-gray-800 text-white font-medium'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+            >
+              {tab.label}
+              {tab.id === 'changes' && pendingCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
 
-      <div className="space-y-3">
-        {tools.map(tool => (
-          <ToolCard
-            key={tool.id}
-            tool={tool}
-            onToggle={handleToggle}
-            onEnvChange={handleEnvChange}
-          />
-        ))}
-      </div>
+        <div className="p-3 border-t border-gray-800">
+          <button
+            onClick={() => signOut()}
+            className="w-full text-left px-3 py-2 text-gray-600 hover:text-gray-400 text-sm rounded-lg hover:bg-gray-800/50 transition"
+          >
+            로그아웃
+          </button>
+        </div>
+      </aside>
 
-      <button
-        onClick={() => setShowModal(true)}
-        className="mt-6 w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 rounded-xl text-sm transition"
-      >
-        + 툴 추가
-      </button>
-
-      {showModal && <AddToolModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
-
-      <ClaudeChat context={{ tools: tools.map(t => ({ name: t.name, is_on: t.is_on })) }} />
+      {/* 메인 컨텐츠 */}
+      <main className="flex-1 overflow-auto">
+        {activeTab === 'tools' && <ToolsTab />}
+        {activeTab === 'changes' && <ChangesTab />}
+        {activeTab === 'grace' && <GraceTab />}
+        {activeTab === 'chat' && (
+          <div className="h-full flex flex-col">
+            <ChatTab context={{ tools }} />
+          </div>
+        )}
+      </main>
     </div>
   )
 }
